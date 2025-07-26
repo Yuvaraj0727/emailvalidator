@@ -1,40 +1,50 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Cookies from 'js-cookie';
-
-const API_KEY = import.meta.env.VITE_MAILBOXLAYER_API_KEY;
+import Cookies from "js-cookie";
 
 const EmailVerify = () => {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Handle email verification
   const handleVerify = async () => {
     setError("");
+
     if (!email) {
       setError("Please enter an email address.");
       return;
     }
 
     setLoading(true);
+
     try {
-      console.log(import.meta.env.VITE_MAILBOXLAYER_API_KEY);
       const response = await fetch(
-        `http://apilayer.net/api/check?access_key=${API_KEY}&email=${email}&smtp=1&format=1`
+        `http://localhost:3000/verify-email?email=${email}`
       );
 
       const data = await response.json();
 
-      if (data.success === false) {
-        setError("API request failed: " + data.error?.info);
-      } else if (data.score > 0.5) {
-        Cookies.set("email", data.email); 
-        navigate("/weather");
+      if (response.status === 200) {
+        console.log("Email verified successfully:", data);
+
+        if (data.score > 0.5) {
+          Cookies.set("email", data.email);
+          Cookies.set("user", data.user);
+          setSuccess(`Score is ${data.score}. Email verified successfully!`);
+          setTimeout(() => {
+            navigate("/weather");
+          }, 2000);
+        } else {
+          setError(`Score is ${data.score} . Try another one.`);
+        }
       } else {
-        setError("❌ Email seems invalid. Try another one.");
+        setError(`Email seems invalid. Try another one.`);
       }
-    } catch (err) {
+    } catch (error) {
+      console.error("Error verifying email:", error);
       setError("Something went wrong. Please try again.");
     }
     setLoading(false);
@@ -51,7 +61,7 @@ const EmailVerify = () => {
           Enter your email address to continue.
         </p>
 
-        {/* Input */}
+        {/* Input Field */}
         <div className="mb-6">
           <label className="block text-sm font-semibold text-gray-700 mb-2">
             Email Address
@@ -68,19 +78,24 @@ const EmailVerify = () => {
           />
         </div>
 
-        {/* Button */}
+        {/* Submit Button */}
         <button
           onClick={handleVerify}
           disabled={loading}
-          className="w-full cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-lg transition-all duration-200 disabled:bg-blue-300 disabled:cursor-not-allowed"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-lg transition-all duration-200 disabled:bg-blue-300 disabled:cursor-not-allowed"
         >
           {loading ? "Verifying..." : "Verify Email"}
         </button>
 
         {/* Error Message */}
         {error && (
-          <div className="mt-5 bg-red-100 text-red-800 text-sm text-center font-medium p-3 rounded-md shadow-sm">
+          <div className="mt-5 bg-red-200 text-red-800 text-sm text-center font-medium p-3 rounded-md shadow-sm">
             {error}
+          </div>
+        )}
+        {success && (
+          <div className="mt-5 bg-green-200 text-green-800 text-sm text-center font-medium p-3 rounded-md shadow-sm">
+            {success}
           </div>
         )}
       </div>

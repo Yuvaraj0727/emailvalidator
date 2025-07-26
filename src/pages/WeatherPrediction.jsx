@@ -1,4 +1,3 @@
-// Add this at the top with other imports
 import { useEffect, useState } from "react";
 import { ImSearch } from "react-icons/im";
 import { CiLocationOn } from "react-icons/ci";
@@ -13,9 +12,7 @@ import cloudysun from "../assets/images/cloudysun.png";
 import rainy from "../assets/images/rainy.png";
 import suncloudy from "../assets/images/sunwithclould.png";
 import { useNavigate } from "react-router-dom";
-import Cookies from 'js-cookie';
-
-const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
+import Cookies from "js-cookie";
 
 const WeatherPrediction = () => {
   const [weather, setWeather] = useState(null);
@@ -29,7 +26,7 @@ const WeatherPrediction = () => {
     year: "",
   });
 
-  const [user, setUser] = useState(Cookies.get("email"));
+  const [user, setUser] = useState("");
 
   const navigate = useNavigate();
 
@@ -40,28 +37,31 @@ const WeatherPrediction = () => {
       const { latitude, longitude } = position.coords;
 
       const response = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${API_KEY}&units=metric`
+        `http://localhost:3000/api/weather/location?lat=${latitude}&lon=${longitude}`
       );
 
       const data = await response.json();
-      setWeather(data);
-      const now = Date.now() / 1000;
-      const isDayTime = now > data.sys.sunrise && now < data.sys.sunset;
-      setIsDay(isDayTime);
+      setTimeout(() => {
+        setWeather(data);
+        const now = Date.now() / 1000;
+        const isDayTime = now > data.sys.sunrise && now < data.sys.sunset;
+        setIsDay(isDayTime);
+      }, 1500);
     });
 
     const intervalId = setInterval(updateDate, 1000 * 60);
     return () => clearInterval(intervalId);
   }, []);
 
-  const checkUser = () =>{
+  const checkUser = () => {
     const email = Cookies.get("email");
     if (!email) {
+      alert("Please verify your email first.");
       navigate("/");
     } else {
-      setUser(email.split("@")[0]);
+      setUser(Cookies.get("user"));
     }
-  }
+  };
 
   const updateDate = () => {
     const now = new Date();
@@ -76,15 +76,17 @@ const WeatherPrediction = () => {
 
   const searchByCity = async () => {
     const response = await fetch(
-      `https://api.openweathermap.org/data/2.5/weather?q=${search}&appid=${API_KEY}&units=metric`
+      `http://localhost:3000/api/weather/city?city=${search}`
     );
     const data = await response.json();
     if (data.cod === 200) {
-      setWeather(data);
-      setSearch("");
-      const now = Date.now() / 1000;
-      const isDayTime = now > data.sys.sunrise && now < data.sys.sunset;
-      setIsDay(isDayTime);
+      setTimeout(() => {
+        setWeather(data);
+        setSearch("");
+        const now = Date.now() / 1000;
+        const isDayTime = now > data.sys.sunrise && now < data.sys.sunset;
+        setIsDay(isDayTime);
+      }, 1500);
     } else {
       alert("City not found! Please try again.");
     }
@@ -110,10 +112,10 @@ const WeatherPrediction = () => {
     );
   }
 
-  const handelLogout = () =>{
+  const handelLogout = () => {
     Cookies.remove("email");
-    navigate("/")
-  }
+    navigate("/");
+  };
 
   // Styles
   const backgroundColor = isDay ? "bg-blue-50" : "bg-gray-900";
@@ -180,7 +182,10 @@ const WeatherPrediction = () => {
               {/* {Cookies.get("email")} */}
               {user}
             </span>
-            <button onClick={handelLogout} className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">
+            <button
+              onClick={handelLogout}
+              className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+            >
               Logout
             </button>
           </div>
